@@ -1,14 +1,12 @@
 import React from 'react'
-
 import { useState, useEffect } from "react";
-import {nanoid} from 'nanoid'
+import { nanoid } from "nanoid";
 import Form from "react-bootstrap/Form";
 import Table from "react-bootstrap/Table";
-import Confetti from 'react-confetti'
-import './App.css'
-import 'bootstrap/dist/css/bootstrap.min.css'
-import useWindowSize from 'react-use/lib/useWindowSize';
-
+import Alert from 'react-bootstrap/Alert';
+import Confetti from "react-confetti";
+import "./App.css";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 
 const shops = [
@@ -29,64 +27,111 @@ const IconButton = ({ icon }) => (
   </button>
 );
 
-
-
 function App() {
-
-  const [productInput, setProductInput] = useState('')
+  const [productInput, setProductInput] = useState("");
   const [selectedShop, setSelectedShop] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [products, setProducts] = useState([]);
-  const [isCompleted, setIsCompleted] = useState(false);
-  const { width, height } = useWindowSize()
+  const [confettiVisible, setConfettiVisible] = useState(false);
+  
+  const [filteredShopId, setFilteredShopId] = useState("");
+  const [filteredCategoryId, setFilteredCategoryId] = useState("");
+  const [filteredStatus, setFilteredStatus] = useState("all");
+  const [filteredName, setFilteredName] = useState("");
+  const [showAlert, setShowAlert] = useState(false);
+
 
   const addProducts = () => {
+    if (!productInput || !selectedShop || !selectedCategory) {
+      alert('Lütfen ürün adı, market ve kategori seçin.');
+      return;
+    }
     const newProduct = {
       id: nanoid(),
       name: productInput,
-      shop: selectedShop,  // Shop bilgisi eklendi
-      category: selectedCategory,  // Category bilgisi eklendi
+      shop: selectedShop, // Shop bilgisi eklendi
+      category: selectedCategory, // Category bilgisi eklendi
       isBought: false,
     };
 
-    setProducts([...products, newProduct]);
-    setProductInput("");
+    setProducts((prevProducts) => {
+      const updatedProducts = [...prevProducts, newProduct];
+
+      const allItemsBought = updatedProducts.every((item) => item.isBought);
+      if (allItemsBought && updatedProducts.length > 0) {
+        setConfettiVisible(true);
+      }
+
+      return updatedProducts;
+    });
+
+    setProductInput('');
   };
 
+  useEffect(() => {
+    const allItemsBought = products.every((item) => item.isBought);
+    if (allItemsBought && products.length > 0) {
+      setConfettiVisible(true);
+    } else {
+      setConfettiVisible(false);
+    }
+  }, [products]);
+
+ 
 
   const handleBuy = (id) => {
     setProducts((prevProducts) =>
       prevProducts.map((product) =>
-        product.id === id ? { ...product, isBought: !product.isBought } : product
+        product.id === id
+          ? { ...product, isBought: !product.isBought }
+          : product
       )
     );
+    setShowAlert(true);
   };
 
   const handleDelete = (id) => {
-    setProducts((prevProducts) => prevProducts.filter((product) => product.id !== id));
+    const updatedProducts = products.filter((product) => product.id !== id);
+    setProducts(updatedProducts);
   };
 
   useEffect(() => {
-    // handleCompleted fonksiyonunu tanımlamışsınız ve orada bir durumu güncelliyorsunuz
-    handleCompleted();
-  }, [isCompleted]);
+    const allItemsBought = products.every((item) => item.isBought);
 
-  const handleCompleted = () => {
-    // isCompleted durumunu güncellendiğinde Confetti bileşenini render etmek istiyorsunuz
-    // Burada Confetti bileşenini render etmek için bir durumu kontrol edebilirsiniz
-    if (isCompleted) {
-      return (
-        <Confetti
-          width={width}
-          height={height}
-        />
-      );
+    if (allItemsBought && products.length > 0) {
+      setShowAlert(true);
+    } else {
+      setShowAlert(false);
     }
-  }
-  
-  
+  }, [products]);
 
+ 
+  
+  const filteredProducts = products.filter((product) => {
+    return (
+      (!filteredShopId || product.shopId == filteredShopId) &&
+      (!filteredCategoryId || product.categoryId == filteredCategoryId) &&
+      (filteredStatus === "all" ||
+        (filteredStatus === "bought" && product.isBought) ||
+        (filteredStatus === "notBought" && !product.isBought)) &&
+      (!filteredName ||
+        fuzzySearchFunction(product.name.toLowerCase(), filteredName.toLowerCase()))
+    );
+  });
 
+  const fuzzySearchFunction = (str, query) => {
+    let i = 0;
+    let j = 0;
+
+    while (j < query.length && i < str.length) {
+      if (str[i] === query[j]) {
+        j++;
+      }
+      i++;
+    }
+
+    return j === query.length;
+  };
   
 
   return (
@@ -104,11 +149,11 @@ function App() {
             onChange={(e) => setProductInput(e.target.value)}
           />
         </Form.Group>
-       
 
         <Form.Select
           onChange={(e) => setSelectedShop(e.target.value)}
-          value={selectedShop} className="form-select"
+          value={selectedShop}
+          className="form-select"
         >
           <option>Market seç</option>
           {shops.map((shop) => (
@@ -119,21 +164,80 @@ function App() {
         </Form.Select>
         <Form.Select
           onChange={(e) => setSelectedCategory(e.target.value)}
-          value={selectedCategory} className="form-select"
+          value={selectedCategory}
+          className="form-select"
         >
           <option>Kategori seç</option>
           {categories.map((category) => (
             <option key={category.id} value={category.id}>
               {category.name}
             </option>
-  
           ))}
         </Form.Select>
-        
-        <button className="button m-3 px-5" onClick={addProducts} type="button" >
-  Button
-</button>
+
+        <button className="button m-3 px-5" onClick={addProducts} type="button">
+          Button
+        </button>
       </Form>
+
+      {showAlert && (
+        <Alert variant="success" onClose={() => setShowAlert(false)} dismissible>
+          Alışveriş Tamamlandı!
+        </Alert>
+      )}
+      {confettiVisible && <Confetti />}
+
+      <div>
+        <h1 className="label-head">Ürünleri Filtrele</h1>
+        <select>
+          <option>Market</option>
+          {shops.map((shop) => (
+            <option
+              key={shop.id}
+              onChange={(e) => setFilteredShopId(e.target.value)}
+              value={filteredShopId}
+            >
+              {shop.name}
+            </option>
+          ))}
+        </select>
+        <select>
+          <option>Kategori</option>
+          {categories.map((category) => (
+            <option
+              key={category.id}
+              onChange={(e) => setFilteredCategoryId(e.target.value)}
+              value={filteredCategoryId}
+            >
+              {category.name}
+            </option>
+          ))}
+        </select>
+        <div>
+          <input
+            type="radio"
+            value="all"
+            checked={filteredStatus === "all"}
+            onChange={() => setFilteredStatus("all")}
+          />{" "}
+          Tümü
+          <input
+            type="radio"
+            value="bought"
+            checked={filteredStatus === "bought"}
+            onChange={() => setFilteredStatus("bought")}
+          />{" "}
+          Satın Alınanlar
+          <input
+            type="radio"
+            value="notBought"
+            checked={filteredStatus === "notBought"}
+            onChange={() => setFilteredStatus("notBought")}
+          />{" "}
+          Satın Alınmayanlar
+        </div>
+        <input type="text" value={filteredName} onChange={(e) => setFilteredName(e.target.value)} />
+      </div>
 
       <Table className="table-container">
         <thead>
@@ -167,8 +271,7 @@ function App() {
         </tbody>
       </Table>
     </div>
-    
-  )
+  );
 }
 
-export default App
+export default App;
