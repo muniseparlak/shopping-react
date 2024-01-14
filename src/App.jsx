@@ -5,6 +5,7 @@ import Form from "react-bootstrap/Form";
 import Table from "react-bootstrap/Table";
 import Alert from 'react-bootstrap/Alert';
 import Confetti from "react-confetti";
+import FuzzySearch from 'react-fuzzy';
 import "./App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 
@@ -34,11 +35,14 @@ function App() {
   const [products, setProducts] = useState([]);
   const [confettiVisible, setConfettiVisible] = useState(false);
   
+
   const [filteredShopId, setFilteredShopId] = useState("");
   const [filteredCategoryId, setFilteredCategoryId] = useState("");
   const [filteredStatus, setFilteredStatus] = useState("all");
   const [filteredName, setFilteredName] = useState("");
   const [showAlert, setShowAlert] = useState(false);
+  const [filteredProducts, setFilteredProducts] = useState('')
+  
 
 
   const addProducts = () => {
@@ -107,31 +111,29 @@ function App() {
 
  
   
-  const filteredProducts = products.filter((product) => {
-    return (
-      (!filteredShopId || product.shopId == filteredShopId) &&
-      (!filteredCategoryId || product.categoryId == filteredCategoryId) &&
-      (filteredStatus === "all" ||
-        (filteredStatus === "bought" && product.isBought) ||
-        (filteredStatus === "notBought" && !product.isBought)) &&
-      (!filteredName ||
-        fuzzySearchFunction(product.name.toLowerCase(), filteredName.toLowerCase()))
-    );
-  });
+  
 
-  const fuzzySearchFunction = (str, query) => {
-    let i = 0;
-    let j = 0;
-
-    while (j < query.length && i < str.length) {
-      if (str[i] === query[j]) {
-        j++;
-      }
-      i++;
-    }
-
-    return j === query.length;
+  const handleFilterChange = (result) => {
+    setFilteredProducts(result);
   };
+
+  const filterProducts = () => {
+    return filteredProducts.filter((product) => {
+      return (
+        (!filteredShopId || product.shop == parseInt(filteredShopId)) &&
+        (!filteredCategoryId || product.category == parseInt(filteredCategoryId)) &&
+        (filteredStatus === 'all' ||
+          (filteredStatus === 'bought' && product.isBought) ||
+          (filteredStatus === 'notBought' && !product.isBought))
+      );
+    });
+  };
+
+  // useEffect(() => {
+  //   // Filtrelerde herhangi bir değişiklik olduğunda çalışacak kod buraya gelecek
+  //   const filteredProducts = filterProducts();
+   
+  // }, [filteredShopId, filteredCategoryId, filteredStatus, filteredName, products]);
   
 
   return (
@@ -189,26 +191,33 @@ function App() {
 
       <div>
         <h1 className="label-head">Ürünleri Filtrele</h1>
-        <select>
-          <option>Market</option>
+
+
+        <FuzzySearch
+          list={products}
+          keys={["name", "shop", "category"]}
+          onChange={handleFilterChange}
+          resultsTemplate={(props, state, styles) => {
+            return state.results.map((val, i) => (
+              <div key={i} style={styles.results}>
+                {val.name}
+              </div>
+            ));
+          }}
+        />
+
+        <select onChange={(e) => setFilteredShopId(e.target.value)} value={filteredShopId}>
+          <option value="">Market</option>
           {shops.map((shop) => (
-            <option
-              key={shop.id}
-              onChange={(e) => setFilteredShopId(e.target.value)}
-              value={filteredShopId}
-            >
+            <option key={shop.id} value={shop.id}>
               {shop.name}
             </option>
           ))}
         </select>
-        <select>
-          <option>Kategori</option>
+        <select onChange={(e) => setFilteredCategoryId(e.target.value)} value={filteredCategoryId}>
+          <option value="">Kategori</option>
           {categories.map((category) => (
-            <option
-              key={category.id}
-              onChange={(e) => setFilteredCategoryId(e.target.value)}
-              value={filteredCategoryId}
-            >
+            <option key={category.id} value={category.id}>
               {category.name}
             </option>
           ))}
@@ -217,26 +226,26 @@ function App() {
           <input
             type="radio"
             value="all"
-            checked={filteredStatus === "all"}
-            onChange={() => setFilteredStatus("all")}
-          />{" "}
+            checked={filteredStatus === 'all'}
+            onChange={() => setFilteredStatus('all')}
+          />{' '}
           Tümü
           <input
             type="radio"
             value="bought"
-            checked={filteredStatus === "bought"}
-            onChange={() => setFilteredStatus("bought")}
-          />{" "}
+            checked={filteredStatus === 'bought'}
+            onChange={() => setFilteredStatus('bought')}
+          />{' '}
           Satın Alınanlar
           <input
             type="radio"
             value="notBought"
-            checked={filteredStatus === "notBought"}
-            onChange={() => setFilteredStatus("notBought")}
-          />{" "}
+            checked={filteredStatus === 'notBought'}
+            onChange={() => setFilteredStatus('notBought')}
+          />{' '}
           Satın Alınmayanlar
         </div>
-        <input type="text" value={filteredName} onChange={(e) => setFilteredName(e.target.value)} />
+        
       </div>
 
       <Table className="table-container">
