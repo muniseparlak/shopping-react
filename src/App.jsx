@@ -91,6 +91,8 @@ function App() {
   const handleDelete = (id) => {
     const updatedProducts = products.filter((product) => product.id !== id);
     setProducts(updatedProducts);
+    setFilteredProducts((prevFilteredProducts) => prevFilteredProducts.filter((product) => product.id !== id));
+
   };
 
   useEffect(() => {
