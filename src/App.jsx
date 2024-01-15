@@ -1,14 +1,13 @@
-import React from 'react'
+import React from "react";
 import { useState, useEffect } from "react";
 import { nanoid } from "nanoid";
 import Form from "react-bootstrap/Form";
 import Table from "react-bootstrap/Table";
-import Alert from 'react-bootstrap/Alert';
+import Alert from "react-bootstrap/Alert";
 import Confetti from "react-confetti";
-import FuzzySearch from 'react-fuzzy';
+import FuzzySearch from "react-fuzzy";
 import "./App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
-
 
 const shops = [
   { id: 1, name: "Migros" },
@@ -23,7 +22,7 @@ const categories = [
 ];
 
 const IconButton = ({ icon }) => (
-  <button type="button" onClick={() => alert("Product deleted!")}>
+  <button type="button" onClick={() => alert("Ürün silindi!")}>
     {icon}
   </button>
 );
@@ -34,27 +33,24 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [products, setProducts] = useState([]);
   const [confettiVisible, setConfettiVisible] = useState(false);
-  
 
   const [filteredShopId, setFilteredShopId] = useState("");
   const [filteredCategoryId, setFilteredCategoryId] = useState("");
   const [filteredStatus, setFilteredStatus] = useState("all");
   const [filteredName, setFilteredName] = useState("");
   const [showAlert, setShowAlert] = useState(false);
-  const [filteredProducts, setFilteredProducts] = useState('')
-  
-
+  const [filteredProducts, setFilteredProducts] = useState([]);
 
   const addProducts = () => {
     if (!productInput || !selectedShop || !selectedCategory) {
-      alert('Lütfen ürün adı, market ve kategori seçin.');
+      alert("Lütfen ürün adı, market ve kategori seçin.");
       return;
     }
     const newProduct = {
       id: nanoid(),
       name: productInput,
-      shop: selectedShop, // Shop bilgisi eklendi
-      category: selectedCategory, // Category bilgisi eklendi
+      shop: parseInt(selectedShop),
+      category: parseInt(selectedCategory),
       isBought: false,
     };
 
@@ -69,7 +65,7 @@ function App() {
       return updatedProducts;
     });
 
-    setProductInput('');
+    setProductInput("");
   };
 
   useEffect(() => {
@@ -80,8 +76,6 @@ function App() {
       setConfettiVisible(false);
     }
   }, [products]);
-
- 
 
   const handleBuy = (id) => {
     setProducts((prevProducts) =>
@@ -109,32 +103,32 @@ function App() {
     }
   }, [products]);
 
- 
-  
-  
-
   const handleFilterChange = (result) => {
     setFilteredProducts(result);
   };
 
-  const filterProducts = () => {
-    return filteredProducts.filter((product) => {
+  const startFiltering = () => {
+    const filtered = products.filter((product) => {
+      const isShopMatch =
+        filteredShopId === "" || product.shop === parseInt(filteredShopId);
+      const isCategoryMatch =
+        filteredCategoryId === "" ||
+        product.category === parseInt(filteredCategoryId);
+      const isStatusMatch =
+        filteredStatus === "all" ||
+        (filteredStatus === "bought" && product.isBought) ||
+        (filteredStatus === "notBought" && !product.isBought);
+      const isProductNameMatch =
+        !filteredName ||
+        product.name.toLowerCase().includes(filteredName.toLowerCase());
+
       return (
-        (!filteredShopId || product.shop == parseInt(filteredShopId)) &&
-        (!filteredCategoryId || product.category == parseInt(filteredCategoryId)) &&
-        (filteredStatus === 'all' ||
-          (filteredStatus === 'bought' && product.isBought) ||
-          (filteredStatus === 'notBought' && !product.isBought))
+        isShopMatch && isCategoryMatch && isStatusMatch && isProductNameMatch
       );
     });
-  };
 
-  // useEffect(() => {
-  //   // Filtrelerde herhangi bir değişiklik olduğunda çalışacak kod buraya gelecek
-  //   const filteredProducts = filterProducts();
-   
-  // }, [filteredShopId, filteredCategoryId, filteredStatus, filteredName, products]);
-  
+    setFilteredProducts(filtered);
+  };
 
   return (
     <div className="container">
@@ -178,75 +172,20 @@ function App() {
         </Form.Select>
 
         <button className="button m-3 px-5" onClick={addProducts} type="button">
-          Button
+          Ürün Ekle
         </button>
       </Form>
 
       {showAlert && (
-        <Alert variant="success" onClose={() => setShowAlert(false)} dismissible>
+        <Alert
+          variant="success"
+          onClose={() => setShowAlert(false)}
+          dismissible
+        >
           Alışveriş Tamamlandı!
         </Alert>
       )}
       {confettiVisible && <Confetti />}
-
-      <div>
-        <h1 className="label-head">Ürünleri Filtrele</h1>
-
-
-        <FuzzySearch
-          list={products}
-          keys={["name", "shop", "category"]}
-          onChange={handleFilterChange}
-          resultsTemplate={(props, state, styles) => {
-            return state.results.map((val, i) => (
-              <div key={i} style={styles.results}>
-                {val.name}
-              </div>
-            ));
-          }}
-        />
-
-        <select onChange={(e) => setFilteredShopId(e.target.value)} value={filteredShopId}>
-          <option value="">Market</option>
-          {shops.map((shop) => (
-            <option key={shop.id} value={shop.id}>
-              {shop.name}
-            </option>
-          ))}
-        </select>
-        <select onChange={(e) => setFilteredCategoryId(e.target.value)} value={filteredCategoryId}>
-          <option value="">Kategori</option>
-          {categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-        <div>
-          <input
-            type="radio"
-            value="all"
-            checked={filteredStatus === 'all'}
-            onChange={() => setFilteredStatus('all')}
-          />{' '}
-          Tümü
-          <input
-            type="radio"
-            value="bought"
-            checked={filteredStatus === 'bought'}
-            onChange={() => setFilteredStatus('bought')}
-          />{' '}
-          Satın Alınanlar
-          <input
-            type="radio"
-            value="notBought"
-            checked={filteredStatus === 'notBought'}
-            onChange={() => setFilteredStatus('notBought')}
-          />{' '}
-          Satın Alınmayanlar
-        </div>
-        
-      </div>
 
       <Table className="table-container">
         <thead>
@@ -267,8 +206,126 @@ function App() {
               }}
             >
               <td>{product.name}</td>
-              <td>{product.category}</td>
-              <td>{product.shop}</td>
+              <td>{shops.find((shop) => shop.id === product.shop)?.name}</td>
+              <td>
+                {
+                  categories.find(
+                    (category) => category.id === product.category
+                  )?.name
+                }
+              </td>
+              <td onClick={() => handleBuy(product.id)}>
+                {product.isBought ? "Satın Alındı" : "Satın Al"}
+              </td>
+              <td onClick={() => handleDelete(product.id)}>
+                <IconButton icon="✖️" />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+
+      <hr />
+
+      <div>
+        <h1 className="label-head">Ürünleri Filtrele</h1>
+
+        <FuzzySearch
+          className={"mx-auto"}
+          list={products}
+          keys={["name", "shop", "category"]}
+          onChange={handleFilterChange}
+          resultsTemplate={(props, state, styles) => {
+            return state.results.map((val, i) => (
+              <div key={i} style={styles.results}>
+                {val.name}
+              </div>
+            ));
+          }}
+        />
+      </div>
+      <div className="my-2">
+        <select
+          onChange={(e) => setFilteredShopId(e.target.value)}
+          value={filteredShopId}
+        >
+          <option value="">Market</option>
+          {shops.map((shop) => (
+            <option key={shop.id} value={shop.id}>
+              {shop.name}
+            </option>
+          ))}
+        </select>
+        <select
+          onChange={(e) => setFilteredCategoryId(e.target.value)}
+          value={filteredCategoryId}
+        >
+          <option value="">Kategori</option>
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
+        <div className="my-2">
+          <input
+            type="radio"
+            value="all"
+            checked={filteredStatus === "all"}
+            onChange={() => setFilteredStatus("all")}
+          />{" "}
+          Tümü
+          <input
+            type="radio"
+            value="bought"
+            checked={filteredStatus === "bought"}
+            onChange={() => setFilteredStatus("bought")}
+          />{" "}
+          Satın Alınanlar
+          <input
+            type="radio"
+            value="notBought"
+            checked={filteredStatus === "notBought"}
+            onChange={() => setFilteredStatus("notBought")}
+          />{" "}
+          Satın Alınmayanlar
+        </div>
+        <button
+          className="button m-3 px-5"
+          onClick={startFiltering}
+          type="button"
+        >
+          Ürünleri Filtrele
+        </button>
+      </div>
+
+      <Table className="table-container">
+        <thead>
+          <tr>
+            <th>Ürün Adı</th>
+            <th>Market</th>
+            <th>Kategori</th>
+            <th>Durum</th>
+            <th>İşlemler</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredProducts.map((product) => (
+            <tr
+              key={product.id}
+              style={{
+                textDecoration: product.isBought ? "line-through" : "none",
+              }}
+            >
+              <td>{product.name}</td>
+              <td>{shops.find((shop) => shop.id === product.shop)?.name}</td>
+              <td>
+                {
+                  categories.find(
+                    (category) => category.id === product.category
+                  )?.name
+                }
+              </td>
               <td onClick={() => handleBuy(product.id)}>
                 {product.isBought ? "Satın Alındı" : "Satın Al"}
               </td>
